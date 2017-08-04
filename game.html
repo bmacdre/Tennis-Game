@@ -1,0 +1,163 @@
+<html>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+
+var canvas;
+var canvasContext;
+var ballX = 50;
+var ballY = 50;
+var ballSpeedX = 5;
+var ballSpeedY = 5;
+var paddle1Y = 250;
+var player1Score = 0;
+var AIScore = 0;
+var paddle2Y = 250;
+
+const PADDLE_HEIGHT = 100;
+const PADDLE_THICKNESS = 10;
+const WINNING_SCORE = 11;
+
+function calculateMousePos(evt){
+    var rect = canvas.getBoundingClientRect();
+	var root = document.documentElement;
+	var mouseX = evt.clientX - rect.left - root.scrollLeft;
+	var mouseY = evt.clientY - rect.top - root.scrollTop;
+	return{
+        x:mouseX,
+        y:mouseY		
+	};
+}
+
+window.onload = function(){ 
+    canvas = document.getElementById('gameCanvas');
+	canvasContext = canvas.getContext('2d');
+	
+	var fps = 60;
+	setInterval(function(){moveEverything(); drawEverything();}, 1000/fps);
+	
+	canvas.addEventListener('mousemove', function(evt){
+	        var mousePos = calculateMousePos(evt);
+			paddle1Y = mousePos.y-PADDLE_HEIGHT/2;
+	})
+}
+
+function getRandomInt(min,max){
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+	
+//AI Movement   
+function computerMovement(){
+    //var AIpaddleSpeedMod = getRandomInt(1,3); //meant to be used to vary AI paddle speed
+    var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT/2);	
+	
+	if(ballY > paddle2YCenter+35 && ballX > 180+getRandomInt(50,250)){
+	    paddle2Y += 5;
+	} 
+	if(ballY < paddle2YCenter-35 && ballX > 180+getRandomInt(50,250)){
+	    paddle2Y-= 5;
+	}
+}   
+   
+function moveEverything(){	
+    computerMovement();
+	ballX = ballX + ballSpeedX;
+	ballY = ballY + ballSpeedY;
+	
+	if(ballX > canvas.width-10){
+	    ballReset();
+		player1Score++;
+	} else if (ballX < 10){
+	    ballReset();
+		AIScore++;
+	} 
+	if(ballX-10 == 20 && ballY >= paddle1Y+2 && ballY <= paddle1Y+102) {
+	    ballSpeedX = -ballSpeedX;
+		var deltaY = ballY - (paddle1Y+PADDLE_HEIGHT/2);
+		ballSpeedY = deltaY * 0.20;
+	}
+	if(ballX+10 == canvas.width-20 && ballY >= paddle2Y+2 && ballY <= paddle2Y+102){
+	    ballSpeedX = -ballSpeedX;
+		var deltaY = ballY - (paddle2Y+PADDLE_HEIGHT/2);
+		ballSpeedY = deltaY * 0.20;
+	}	
+	if(ballY > canvas.height-10 || ballY < 10) ballSpeedY = -ballSpeedY;
+}
+
+function drawEverything(){	
+    canvasContext.font = "30px Georgia";
+	colorRect(0, 0, canvas.width, canvas.height, 'black');
+	colorRect(10, paddle1Y, PADDLE_THICKNESS, PADDLE_HEIGHT, 'white'); //paddle drawing
+	drawFilledCircle(15, paddle1Y+PADDLE_HEIGHT, PADDLE_THICKNESS/2, 'white');
+	drawFilledCircle(15, paddle1Y, 5, 'white');
+	
+	//draw Ball
+	drawFilledCircle(ballX, ballY, 10, 'white');
+	colorRect(canvas.width-20, paddle2Y, PADDLE_THICKNESS, PADDLE_HEIGHT, 'white');
+	drawFilledCircle(canvas.width-15, paddle2Y, PADDLE_THICKNESS/2, 'white' );
+	drawFilledCircle(canvas.width-15, paddle2Y+PADDLE_HEIGHT, PADDLE_THICKNESS/2, 'white' );
+	
+	//draw middle line
+	var i = 0;
+	for (i = 0; i <= 600; i += 50){
+	    colorRect(399, i, 3, 30, 'white');
+	}
+	
+	//display scores
+	canvasContext.fillText(player1Score, 150, 150);
+	canvasContext.fillText(AIScore, canvas.width-150,150);
+	
+	//endgame states
+	if (player1Score >= WINNING_SCORE && player1Score-AIScore >= 2) winScreen();
+	if (AIScore >= WINNING_SCORE && AIScore-player1Score >= 2) loseScreen();
+}
+
+function colorRect(leftX, topY, width, height, drawColor) {
+	canvasContext.fillStyle = drawColor;
+	canvasContext.fillRect(leftX,topY,width,height);
+}
+
+
+function drawFilledCircle(xCoord, yCoord, radius, circleColor){
+    canvasContext.fillStyle = circleColor;
+	canvasContext.beginPath();
+	canvasContext.arc(xCoord, yCoord, radius, 0, Math.PI*2, 'true', circleColor);
+	canvasContext.fill();
+}
+
+function ballReset(){
+	ballSpeedX = -ballSpeedX;
+	ballSpeedY = getRandomInt(2,7);
+	ballX = canvas.width/2;
+	ballY = canvas.height/2;
+}
+
+function winScreen(){
+    ballSpeedX = 0;
+	ballSpeedY = 0;
+	canvasContext.font = "30px Georgia";
+	var gradient = canvasContext.createLinearGradient(0,0,canvas.width-350,0);
+	gradient.addColorStop("0","magenta");
+    gradient.addColorStop("0.5","blue");
+    gradient.addColorStop("1.0","red");
+	canvasContext.fillStyle=gradient;
+    canvasContext.fillText("You Win!",340,200);
+}
+
+function loseScreen(){
+    ballSpeedX = 0;
+	ballSpeedY = 0;
+	canvasContext.font = "30px Georgia";
+	var gradient = canvasContext.createLinearGradient(0,0,canvas.width-350,0);
+	gradient.addColorStop("0","magenta");
+    gradient.addColorStop("0.5","blue");
+    gradient.addColorStop("1.0","red");
+	canvasContext.fillStyle=gradient;
+    canvasContext.fillText("You Lose :( ",340,200);
+}
+</script>
+
+</html>
